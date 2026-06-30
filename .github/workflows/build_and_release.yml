@@ -24,10 +24,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install System Dependencies
-        run: |
-          # Wir installieren NUR Python und Make über den Debian-Mirror.
-          # devkitPro-Pakete lassen wir unberührt, da sie bereits im Image stecken.
-          apt-get update && apt-get install -y python3 make
+        run: apt-get update && apt-get install -y python3 make
 
       - name: Build Firmware Binaries
         run: |
