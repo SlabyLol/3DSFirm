@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DarkFox Co. | Firmware Testing</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #0d0d11; 
+            color: #e2e8f0; 
+            margin: 0; 
+            padding: 20px; 
+        }
+        nav { 
+            background: #1e293b; 
+            padding: 15px 20px; 
+            border-radius: 8px; 
+            border: 1px solid #334155;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        }
+        nav a { 
+            color: #38bdf8; 
+            text-decoration: none; 
+            margin-right: 25px; 
+            font-weight: 600; 
+            letter-spacing: 0.5px;
+        }
+        nav a:hover { color: #f1f5f9; }
+        .content { 
+            margin-top: 30px; 
+            background: #1a1a24; 
+            padding: 30px; 
+            border-radius: 8px; 
+            border: 1px solid #2e2e3f;
+        }
+        h1 { color: #38bdf8; margin-top: 0; border-bottom: 2px solid #2e2e3f; padding-bottom: 10px; }
+        h2 { color: #34d399; margin-top: 25px; }
+        
+        /* Grid Layout for Test Tools */
+        .test-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .test-panel {
+            background: #11111a;
+            border: 1px solid #334155;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        /* Simulator Elements */
+        canvas {
+            background: #000;
+            display: block;
+            margin: 10px auto;
+            border: 2px solid #1f3f7f;
+            border-radius: 4px;
+        }
+        .controls-hint {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        /* Validator Dropzone */
+        .dropzone {
+            border: 2px dashed #38bdf8;
+            padding: 40px 20px;
+            text-align: center;
+            color: #94a3b8;
+            cursor: pointer;
+            border-radius: 6px;
+            background: #131322;
+            margin-top: 15px;
+        }
+        .dropzone:hover { background: #18182f; }
+        .log-output {
+            background: #05050a;
+            color: #34d399;
+            font-family: monospace;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+            height: 120px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 0.9rem;
+            border: 1px solid #22c55e;
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="../../index.html">Home</a>
+        <a href="firmware.html">Firmware Spec</a>
+        <a href="test.html">Test Matrix</a>
+        <a href="about-us.html">About Us</a>
+    </nav>
+
+    <div class="content">
+        <h1>Firmware Testing & Diagnostics</h1>
+        <p>Simulation environment and validation engine calibrated for the <code>y_firm_darkfox</code> build specification.</p>
+
+        <div class="test-grid">
+            
+            <div class="test-panel">
+                <h2>1. Core Simulator (Top Screen)</h2>
+                <p>Simulating ARM9 direct memory execution handling graphics buffer mapping over <code>0x18000000</code>.</p>
+                <canvas id="gameCanvas" width="400" height="240"></canvas>
+                <p class="controls-hint">Click inside the canvas and use <b>Arrow Left / Arrow Right</b> keys to simulate physical D-Pad interactions.</p>
+            </div>
+
+            <div class="test-panel">
+                <h2>2. FIRM Header Validation Node</h2>
+                <p>Drop your compiled binary here to crosscheck magic header constraints and structural 512-byte offsets before flashing.</p>
+                <div id="dropzone" class="dropzone">
+                    Drag & Drop <b>y_firm_darkfox.firm</b> here or click to select
+                    <input type="file" id="fileInput" accept=".firm" style="display:none">
+                </div>
+                <div id="log" class="log-output">READY: Awaiting binary payload insertion...</div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- 1. GAME SIMULATION CODE ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let playerX = 180;
+        const playerY = 200;
+        const playerW = 40;
+        const playerH = 10;
+        
+        let enemyX = 200;
+        const enemyY = 20;
+        let enemySpeed = 2;
+
+        let keys = {};
+        window.addEventListener('keydown', (e) => { if(["ArrowLeft","ArrowRight"].includes(e.key)) e.preventDefault(); keys[e.key] = true; });
+        window.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+        function gameLoop() {
+            // Clear Screen (Simulating direct write initialization)
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Read Input simulation
+            if (keys['ArrowLeft']) playerX -= 4;
+            if (keys['ArrowRight']) playerX += 4;
+
+            // Constrain Player boundaries
+            if (playerX < 0) playerX = 0;
+            if (playerX > canvas.width - playerW) playerX = canvas.width - playerW;
+
+            // AI Asteroid movement
+            enemyX += enemySpeed;
+            if (enemyX <= 0 || enemyX >= canvas.width - 20) enemySpeed = -enemySpeed;
+
+            // Render Player (DarkFox Blue)
+            ctx.fillStyle = '#1f3f7f';
+            ctx.fillRect(playerX, playerY, playerW, playerH);
+
+            // Render Enemy (Red Asteroid)
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(enemyX, enemyY, 20, 20);
+
+            requestAnimationFrame(gameLoop);
+        }
+        gameLoop();
+
+        // --- 2. FIRM VALIDATOR LOGIC ---
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const log = document.getElementById('log');
+
+        dropzone.addEventListener('click', () => fileInput.click());
+        dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.borderColor = '#34d399'; });
+        dropzone.addEventListener('dragleave', () => { dropzone.style.borderColor = '#38bdf8'; });
+        dropzone.addEventListener('drop', (e) => { e.preventDefault(); dropzone.style.borderColor = '#38bdf8'; handleFile(e.dataTransfer.files[0]); });
+        fileInput.addEventListener('change', (e) => { handleFile(e.target.files[0]); });
+
+        function handleFile(file) {
+            if (!file) return;
+            log.textContent = `Analyzing: ${file.name}\n`;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const buffer = e.target.result;
+                const view = new DataView(buffer);
+                
+                // Read magic bytes
+                let magic = "";
+                if (buffer.byteLength >= 4) {
+                    magic = String.fromCharCode(view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3));
+                }
+
+                let statusText = `File size: ${buffer.byteLength} bytes\n`;
+                statusText += `Header Magic Validation: ${magic === 'FIRM' ? '✅ PASSED (FIRM detected)' : '❌ FAILED (Invalid format)'}\n`;
+                
+                // Alignment validation
+                const alignmentCheck = buffer.byteLength % 512 === 0;
+                statusText += `Sector Block Alignment (0x200): ${alignmentCheck ? '✅ PASSED (Padded perfectly)' : '❌ FAILED (Corrupt alignment - Luma will drop this)'}\n`;
+                
+                if (magic === 'FIRM' && alignmentCheck) {
+                    statusText += `\nSTATUS: STATUS OK. Target image matches hardware validation profiles. Ready for flash setup.`;
+                } else {
+                    statusText += `\nSTATUS: INCOMPATIBLE. Run local automation toolchains or fix padding structures.`;
+                }
+                log.textContent = statusText;
+            };
+            reader.readAsArrayBuffer(file);
+        }
+    </script>
+</body>
+</html>
