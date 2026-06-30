@@ -1,0 +1,40 @@
+name: Build and Release DarkFox FIRM
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggert den Build bei Tags wie v1.0, v2.0.0 etc.
+
+permissions:
+  contents: write
+
+jobs:
+  build_and_release:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitarm:latest # Holt die 3DS-Compiler-Umgebung
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install System Dependencies
+        run: |
+          # Aktualisiert die Paketquellen und stellt sicher, dass Python 3 & Make installiert sind
+          apt-get update && apt-get install -y python3 make
+          # Installiert die Core-3DS-Entwicklerbibliotheken von devkitPro
+          dkp-pacman -Syu --noconfirm 3ds-dev
+
+      - name: Build Firmware Binaries
+        run: |
+          # Führt das Makefile im Root-Verzeichnis aus
+          make clean
+          make
+
+      - name: Create GitHub Release and Upload Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: y_firm_darkfox.firm
+          name: DarkFox Firmware Release ${{ github.ref_name }}
+          tag_name: ${{ github.ref }}
+          draft: false
+          prerelease: false
