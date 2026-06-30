@@ -13,6 +13,12 @@ jobs:
     # Führt alle Schritte direkt im offiziellen devkitARM-Container aus
     container: devkitpro/devkitarm:latest
 
+    # Hier definieren wir die exakten Systempfade für devkitPro
+    env:
+      DEVKITPRO: /opt/devkitpro
+      DEVKITARM: /opt/devkitpro/devkitARM
+      PATH: /opt/devkitpro/devkitARM/bin:/opt/devkitpro/tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
     steps:
       # 1. Holt den Quellcode aus dem Repository
       - name: Checkout Repository
