@@ -13,8 +13,8 @@ arm11.bin: arm11/source/main.c
 	$(OBJCOPY) -O binary arm11.elf arm11.bin
 
 y_firm_darkfox.firm: arm9.bin arm11.bin
-	@echo "Packe Payloads in 3DS FIRM-Format..."
-	python3 firm_tool.py arm9.bin arm11.bin y_firm_darkfox.firm
+	@echo "Generiere fehlerfreie FIRM..."
+	python3 pack_firm.py arm9.bin arm11.bin y_firm_darkfox.firm
 
 clean:
 	rm -f *.elf *.bin y_firm_darkfox.firm
