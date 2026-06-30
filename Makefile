@@ -29,7 +29,7 @@ $(TARGET): $(SOURCE)
 	$(OBJCOPY) -O binary $(ELF) $(BIN)
 	
 	@echo "4/4 -> Verpacke verschlüsselte NDMA-Strukturen via firmtool..."
-	firmtool build $(TARGET) -9 $(BIN) -e 0x08000000 -A 0x08000000 -C NDMA
+	firmtool build $(TARGET) -D $(BIN) -n 0x08000000 -A 0x08000000 -C NDMA
 	@echo "[SUCCESS] $(TARGET) wurde erfolgreich für die Hardware kalibriert!"
 
 # Bereinigungs-Target für den Workspace
