@@ -2,16 +2,41 @@ OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
 OUTPUT_ARCH(arm)
 ENTRY(main)
 
-MEMORY {
-    ram (rwx) : ORIGIN = 0x08000000, LENGTH = 0x10000 /* ARM9 Tightly-Coupled Memory */
+MEMORY
+{
+    ram (rwx) : ORIGIN = 0x08000000, LENGTH = 96K
 }
 
-SECTIONS {
-    .text : {
-        *(.text.start)
-        *(.text*)
-        *(.rodata*)
+SECTIONS
+{
+    .text :
+    {
+        *(.text.startup)
+        *(.text)
+        *(.text.*)
+        *(.rodata)
+        *(.rodata.*)
+        . = ALIGN(4);
     } > ram
-    .data : { *(.data*) } > ram
-    .bss  : { *(.bss*) } > ram
+
+    .data :
+    {
+        *(.data)
+        *(.data.*)
+        . = ALIGN(4);
+    } > ram
+
+    .bss :
+    {
+        *(.bss)
+        *(.bss.*)
+        *(COMMON)
+        . = ALIGN(4);
+    } > ram
+
+    /DISCARD/ :
+    {
+        *(.comment)
+        *(.ARM.attributes)
+    }
 }
