@@ -13,8 +13,8 @@
 #define SCREEN_WIDTH  400
 #define SCREEN_HEIGHT 240
 
-// HIER IST DIE LÖSUNG: Der Compiler erwartet memset bei Optimierungen (-O2)
-void* memset(void* dest, int c, size_t n) {
+// Eigene memset-Implementierung mit uint32_t für maximale Unabhängigkeit von Headern
+void* memset(void* dest, int c, uint32_t n) {
     uint8_t* p = dest;
     while (n--) {
         *p++ = (uint8_t)c;
