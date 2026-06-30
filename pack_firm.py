@@ -1,56 +1,48 @@
-import sys
 import struct
 import hashlib
+import os
 
-def sha256(data):
-    return hashlib.sha256(data).digest()
+def pack_firmware():
+    arm9_bin_path = "arm9.bin"
+    output_path = "y_firm_darkfox.firm"
 
-def main():
-    if len(sys.argv) < 4:
-        print("Usage: python3 pack_firm.py <arm9.bin> <arm11.bin> <output.firm>")
-        return
+    if not os.path.exists(arm9_bin_path):
+        # Fallback if you haven't extracted raw binary from elf yet
+        os.system("arm-none-eabi-objcopy -O binary arm9.elf arm9.bin")
 
-    with open(sys.argv[1], "rb") as f: arm9 = f.read()
-    with open(sys.argv[2], "rb") as f: arm11 = f.read()
+    with open(arm9_bin_path, "rb") as f:
+        arm9_data = f.read()
 
-    # 1. Padding auf 0x200 Byte Blöcke (Vorschrift für 3DS-NAND/SD)
-    arm11_padded = arm11 + b"\x00" * ((0x200 - (len(arm11) % 0x200)) % 0x200)
-    arm9_padded = arm9 + b"\x00" * ((0x200 - (len(arm9) % 0x200)) % 0x200)
+    # Pad ARM9 data to a perfect 512-byte sector boundary
+    if len(arm9_data) % 512 != 0:
+        arm9_data += b"\x00" * (512 - (len(arm9_data) % 512))
 
-    # 2. FIRM Header aufbauen (0x200 Bytes)
-    header = bytearray(0x200)
+    # Calculate SHA256 checksum of the padded payload segment
+    arm9_hash = hashlib.sha256(arm9_data).digest()
+
+    # Generate the 512-byte (0x200) standard FIRM Header Layout
+    header = bytearray(512)
+
+    # Magic Bytes: 'FIRM'
+    header[0:4] = b"FIRM"
     
-    # Magic & Entry Points
-    struct.pack_into("<4s", header, 0, b"FIRM")
-    struct.pack_into("<I", header, 4, 0)          # Priority
-    struct.pack_into("<I", header, 8, 0x1FF80000) # ARM11 Entry
-    struct.pack_into("<I", header, 12, 0x08000000) # ARM9 Entry
+    # Target execution priorities (ARM11 disabled / ARM9 primary entry)
+    struct.pack_into("<I", header, 0x04, 0x00000000) # ARM11 Entry Address (None)
+    struct.pack_into("<I", header, 0x08, 0x08000000) # ARM9 Entry Address (SysIRAM)
 
-    # Sektion 0: ARM11
-    offset_arm11 = 0x200
-    struct.pack_into("<I", header, 0x40, offset_arm11)
-    struct.pack_into("<I", header, 0x44, 0x1FF80000)
-    struct.pack_into("<I", header, 0x48, len(arm11_padded))
-    struct.pack_into("<I", header, 0x4C, 0) # Typ 0 (ARM11)
-    header[0x50:0x70] = sha256(arm11_padded)
+    # Section 0: Setup ARM9 Header Entries
+    struct.pack_into("<I", header, 0x40, 0x00000200) # File offset where payload starts
+    struct.pack_into("<I", header, 0x44, 0x08000000) # Native Target Memory Destination
+    struct.pack_into("<I", header, 0x48, len(arm9_data)) # Size of the sector allocation
+    struct.pack_into("<I", header, 0x4C, 0x00000001) # Core assignment tag (ARM9 block)
+    header[0x50:0x70] = arm9_hash                     # Store calculated block checksum
 
-    # Sektion 1: ARM9
-    offset_arm9 = offset_arm11 + len(arm11_padded)
-    struct.pack_into("<I", header, 0x70, offset_arm9)
-    struct.pack_into("<I", header, 0x74, 0x08000000)
-    struct.pack_into("<I", header, 0x78, len(arm9_padded))
-    struct.pack_into("<I", header, 0x7C, 1) # Typ 1 (ARM9)
-    header[0x80:0xA0] = sha256(arm9_padded)
-
-    # 3. Dummy RSA-2048 Signatur am Ende des Headers (0x100 Bytes ab Offset 0x100)
-    # Das füllt die Krypto-Validierung aus, damit kein Checksum/Signature-Fail kommt
-    header[0x100:0x200] = b"\x00" * 0x100 
-
-    # Schreiben
-    with open(sys.argv[3], "wb") as f:
+    # Write out the final configured bare-metal image
+    with open(output_path, "wb") as f:
         f.write(header)
-        f.write(arm11_padded)
-        f.write(arm9_padded)
+        f.write(arm9_data)
+
+    print(f"SUCCESS: {output_path} generated and packed successfully.")
 
 if __name__ == "__main__":
-    main()
+    pack_firmware()
