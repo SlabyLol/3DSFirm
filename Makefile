@@ -1,20 +1,40 @@
+# --- DarkFox Co. Hardware Compilation Matrix ---
+
+# Compiler- und Toolchain-Definitionen
 CC      := arm-none-eabi-gcc
 OBJCOPY := arm-none-eabi-objcopy
-CFLAGS  := -Wall -O2 -marm -fomit-frame-pointer -nostdlib
+RM      := rm -f
 
-all: y_firm_darkfox.firm
+# Verzeichnis-Strukturen
+SOURCE  := arm9/source/main.c
+LINKER  := arm9/link.ld
+ELF     := arm9.elf
+BIN     := arm9.bin
+TARGET  := y_firm_darkfox.firm
 
-arm9.bin: arm9/source/main.c
-	$(CC) $(CFLAGS) -march=armv5te -T arm9/link.ld arm9/source/main.c -o arm9.elf
-	$(OBJCOPY) -O binary arm9.elf arm9.bin
+# Compiler-Flags für das nackte Bare-Metal-System
+CFLAGS  := -Wall -O2 -marm -fomit-frame-pointer -nostdlib -march=armv5te -T $(LINKER)
 
-arm11.bin: arm11/source/main.c
-	$(CC) $(CFLAGS) -march=armv6k -T arm11/link.ld arm11/source/main.c -o arm11.elf
-	$(OBJCOPY) -O binary arm11.elf arm11.bin
+# Standard-Target: Führt die gesamte Kette aus
+all: $(TARGET)
 
-y_firm_darkfox.firm: arm9.bin arm11.bin
-	@echo "Generiere fehlerfreie FIRM..."
-	python3 pack_firm.py arm9.bin arm11.bin y_firm_darkfox.firm
+$(TARGET): $(SOURCE)
+	@echo "1/4 -> Säubere alte Build-Fragmente..."
+	@$(RM) $(ELF) $(BIN) $(TARGET)
+	
+	@echo "2/4 -> Kompiliere optimierten ARM9-C-Code..."
+	$(CC) $(CFLAGS) $(SOURCE) -o $(ELF)
+	
+	@echo "3/4 -> Extrahiere flache Hardware-Binärdatei..."
+	$(OBJCOPY) -O binary $(ELF) $(BIN)
+	
+	@echo "4/4 -> Verpacke verschlüsselte NDMA-Strukturen via firmtool..."
+	firmtool build $(TARGET) -e 0x08000000 -D $(BIN) -A 0x08000000 -C NDMA
+	@echo "[SUCCESS] $(TARGET) wurde erfolgreich für die Hardware kalibriert!"
 
+# Bereinigungs-Target für den Workspace
 clean:
-	rm -f *.elf *.bin y_firm_darkfox.firm
+	@echo "Bereinige Workspace..."
+	@$(RM) $(ELF) $(BIN) $(TARGET)
+
+.PHONY: all clean
