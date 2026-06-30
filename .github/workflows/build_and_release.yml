@@ -16,9 +16,9 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. Richtet die devkitARM Toolchain ein
-      - name: Setup devkitARM Environment
-        uses: devkitPro/actions/setup-devkitarm@v2
+      # 2. Richtet die korrekte devkitPro Toolchain ein (Installiert devkitARM automatisch)
+      - name: Setup devkitPro Environment
+        uses: devkitPro/setup-devkitpro@v1
 
       # 3. Installiert firmtool global via pipx und fügt es dem PATH hinzu
       - name: Install firmtool Dependency
