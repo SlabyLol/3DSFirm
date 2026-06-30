@@ -1,39 +1,82 @@
 #include <stdint.h>
 
-// Hardware-Register Definitionen (3DS-spezifisch)
 #define REG_PDN_CLKEN0    (*(volatile uint32_t*)0x10141000)
-#define REG_ARM11_CNT     (*(volatile uint32_t*)0x10141230)
-#define TOP_SCREEN_PADDR  0x18000000 // Physikalischer VRAM für den oberen Bildschirm
+#define REG_PAD_HID       (*(volatile uint32_t*)0x10146000) // Tasten-Register
+#define TOP_SCREEN_PADDR  0x18000000
+
+// Tasten-Bitmasks der 3DS
+#define BUTTON_LEFT   (1 << 5)
+#define BUTTON_RIGHT  (1 << 4)
+#define BUTTON_A      (1 << 0)
+
+// Spielfeld-Größe (3DS Top Screen: 400x240)
+#define SCREEN_WIDTH  400
+#define SCREEN_HEIGHT 240
 
 void delay(int count) {
     for (volatile int i = 0; i < count; i++) __asm__("nop");
 }
 
-void init_screens(void) {
-    // Schalte Stromversorgung für die Display-Engine ein
-    REG_PDN_CLKEN0 |= (1 << 11); 
-    delay(1000);
-
-    // Bildschirm mit einer soliden Farbe (z.B. DarkFox Blau) füllen
+// Zeichnet ein ausgefülltes Rechteck (für Spieler und Gegner)
+void draw_rect(int x, int y, int w, int h, uint32_t color) {
     uint32_t* vram = (uint32_t*)TOP_SCREEN_PADDR;
-    for (int i = 0; i < (400 * 240); i++) {
-        vram[i] = 0x001F3F7F; // ABGR Format
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            int py = y + i;
+            int px = x + j;
+            if (px >= 0 && px < SCREEN_WIDTH && py >= 0 && py < SCREEN_HEIGHT) {
+                // 3DS FB ist oft vertikal orientiert, für dieses Grundgerüst nutzen wir lineares Mapping
+                vram[py * SCREEN_WIDTH + px] = color;
+            }
+        }
     }
 }
 
 int main(void) {
-    // 1. Hardware-Infrastruktur initialisieren
-    init_screens();
+    // Bildschirm-Hardware aktivieren
+    REG_PDN_CLKEN0 |= (1 << 11); 
+    delay(1000);
 
-    // 2. ARM11 Booten vorbereiten (Resetvektoren setzen und ARM11 aufwecken)
-    REG_ARM11_CNT |= 1; 
+    // Spiel-Variablen
+    int player_x = 180;
+    int player_y = 200;
+    int player_width = 40;
+    int player_height = 10;
 
-    // 3. Hauptschleife des ARM9 (System-Kontrolle & Krypto-Operationen)
+    int enemy_x = 200;
+    int enemy_y = 20;
+    int enemy_speed = 2;
+
+    // Hauptspielschleife (Bare-Metal Game Loop)
     while (1) {
-        // Da ARMv5 kein 'wfe' unterstützt, nutzen wir hier ein leeres Statement.
-        // Der Compiler optimiert das dank der Schleifenbedingung nicht weg.
-        __asm__(""); 
+        // 1. Alten Zustand löschen (Bildschirm schwarz färben)
+        draw_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0x00000000);
+
+        // 2. Input abfragen (Register invertieren, da 0 = gedrückt)
+        uint32_t kDown = ~REG_PAD_HID;
+
+        if (kDown & BUTTON_LEFT)  player_x -= 4;
+        if (kDown & BUTTON_RIGHT) player_x += 4;
+
+        // Grenzen einhalten
+        if (player_x < 0) player_x = 0;
+        if (player_x > SCREEN_WIDTH - player_width) player_x = SCREEN_WIDTH - player_width;
+
+        // 3. Gegner-Logik (KI bewegt sich hin und her)
+        enemy_x += enemy_speed;
+        if (enemy_x <= 0 || enemy_x >= SCREEN_WIDTH - 20) {
+            enemy_speed = -enemy_speed; // Richtung wechseln
+        }
+
+        // 4. Objekte zeichnen
+        // Spieler (DarkFox Blau)
+        draw_rect(player_x, player_y, player_width, player_height, 0x001F3F7F);
+        // Gegner / Asteroid (Rot)
+        draw_rect(enemy_x, enemy_y, 20, 20, 0x000000FF);
+
+        // 5. Frame-Rate stabilisieren (Simples V-Sync Delay)
+        delay(50000);
     }
 
-    return 0; // Wird nie erreicht, beruhigt aber den Compiler
+    return 0;
 }
