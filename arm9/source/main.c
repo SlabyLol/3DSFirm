@@ -1,38 +1,40 @@
 #include <stdint.h>
 
 #define REG_PDN_CLKEN0    (*(volatile uint32_t*)0x10141000)
-#define REG_PAD_HID       (*(volatile uint32_t*)0x10146000) // Tasten-Register
+#define REG_PAD_HID       (*(volatile uint32_t*)0x10146000)
 #define TOP_SCREEN_PADDR  0x18000000
 
-// Tasten-Bitmasks der 3DS
-#define BUTTON_LEFT   (1 << 5)
-#define BUTTON_RIGHT  (1 << 4)
-#define BUTTON_A      (1 << 0)
+// Native 3DS LCD physical orientation constants
+#define SCREEN_WIDTH      240
+#define SCREEN_HEIGHT     400
 
-// Spielfeld-Größe (3DS Top Screen: 400x240)
-#define SCREEN_WIDTH  400
-#define SCREEN_HEIGHT 240
+// Tasten-Bitmasks (Inverted raw registers)
+#define BUTTON_LEFT       (1 << 5)
+#define BUTTON_RIGHT      (1 << 4)
 
-// Eigene memset-Implementierung mit uint32_t für maximale Unabhängigkeit von Headern
-void* memset(void* dest, int c, uint32_t n) {
-    uint8_t* p = dest;
-    while (n--) {
-        *p++ = (uint8_t)c;
+// Custom 32-bit fast block memory clear to prevent CPU timing lockups
+void memset32(void* dest, uint32_t val, uint32_t words) {
+    uint32_t* p = (uint32_t*)dest;
+    while (words--) {
+        *p++ = val;
     }
-    return dest;
 }
 
+// Simple assembly loop delay routine
 void delay(int count) {
-    for (volatile int i = 0; i < count; i++) __asm__("nop");
+    for (volatile int i = 0; i < count; i++) {
+        __asm__("nop");
+    }
 }
 
-// Zeichnet ein ausgefülltes Rechteck (für Spieler und Gegner)
+// Optimized native hardware coordinate drawing routine
 void draw_rect(int x, int y, int w, int h, uint32_t color) {
     uint32_t* vram = (uint32_t*)TOP_SCREEN_PADDR;
     for (int i = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
-            int py = y + i;
             int px = x + j;
+            int py = y + i;
+            // Strict hardware boundaries check to eliminate MMIO collision crashes
             if (px >= 0 && px < SCREEN_WIDTH && py >= 0 && py < SCREEN_HEIGHT) {
                 vram[py * SCREEN_WIDTH + px] = color;
             }
@@ -41,49 +43,52 @@ void draw_rect(int x, int y, int w, int h, uint32_t color) {
 }
 
 int main(void) {
-    // Bildschirm-Hardware aktivieren
+    // 1. Force initialize display processing engine power rails
     REG_PDN_CLKEN0 |= (1 << 11); 
-    delay(1000);
+    delay(5000);
 
-    // Spiel-Variablen
-    int player_x = 180;
-    int player_y = 200;
+    // Coordinate variables bound to the native hardware landscape mapping
+    int player_x = 100;
+    int player_y = 350;
     int player_width = 40;
     int player_height = 10;
 
-    int enemy_x = 200;
-    int enemy_y = 20;
+    int enemy_x = 110;
+    int enemy_y = 40;
     int enemy_speed = 2;
 
-    // Hauptspielschleife (Bare-Metal Game Loop)
-    while (1) {
-        // 1. Alten Zustand löschen (Bildschirm schwarz färben)
-        draw_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0x00000000);
+    uint32_t* framebuffer = (uint32_t*)TOP_SCREEN_PADDR;
+    uint32_t total_pixels = SCREEN_WIDTH * SCREEN_HEIGHT;
 
-        // 2. Input abfragen (Register invertieren, da 0 = gedrückt)
+    // 2. Hardware Main Executive Loop
+    while (1) {
+        // FAST BLOCK CLEAR: Eliminates execution lag completely
+        memset32(framebuffer, 0x00000000, total_pixels);
+
+        // Read raw button inputs (Bitwise NOT because active-low hardware registers)
         uint32_t kDown = ~REG_PAD_HID;
 
         if (kDown & BUTTON_LEFT)  player_x -= 4;
         if (kDown & BUTTON_RIGHT) player_x += 4;
 
-        // Grenzen einhalten
+        // Keep player strictly bound inside the physical LCD matrix boundary
         if (player_x < 0) player_x = 0;
         if (player_x > SCREEN_WIDTH - player_width) player_x = SCREEN_WIDTH - player_width;
 
-        // 3. Gegner-Logik (KI bewegt sich hin und her)
+        // Basic automated enemy path logic
         enemy_x += enemy_speed;
         if (enemy_x <= 0 || enemy_x >= SCREEN_WIDTH - 20) {
-            enemy_speed = -enemy_speed; // Richtung wechseln
+            enemy_speed = -enemy_speed;
         }
 
-        // 4. Objekte zeichnen
-        // Spieler (DarkFox Blau)
+        // Render entities via direct safe writes
+        // Player Entity (DarkFox Blue)
         draw_rect(player_x, player_y, player_width, player_height, 0x001F3F7F);
-        // Gegner / Asteroid (Rot)
+        // Enemy Entity (Red Asteroid)
         draw_rect(enemy_x, enemy_y, 20, 20, 0x000000FF);
 
-        // 5. Frame-Rate stabilisieren (Simples V-Sync Delay)
-        delay(50000);
+        // Frame pacing delay logic
+        delay(40000);
     }
 
     return 0;
