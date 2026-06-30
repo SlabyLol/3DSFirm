@@ -13,6 +13,15 @@
 #define SCREEN_WIDTH  400
 #define SCREEN_HEIGHT 240
 
+// HIER IST DIE LÖSUNG: Der Compiler erwartet memset bei Optimierungen (-O2)
+void* memset(void* dest, int c, size_t n) {
+    uint8_t* p = dest;
+    while (n--) {
+        *p++ = (uint8_t)c;
+    }
+    return dest;
+}
+
 void delay(int count) {
     for (volatile int i = 0; i < count; i++) __asm__("nop");
 }
@@ -25,7 +34,6 @@ void draw_rect(int x, int y, int w, int h, uint32_t color) {
             int py = y + i;
             int px = x + j;
             if (px >= 0 && px < SCREEN_WIDTH && py >= 0 && py < SCREEN_HEIGHT) {
-                // 3DS FB ist oft vertikal orientiert, für dieses Grundgerüst nutzen wir lineares Mapping
                 vram[py * SCREEN_WIDTH + px] = color;
             }
         }
