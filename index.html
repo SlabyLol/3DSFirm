@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DarkFox Co. | Main Terminal</title>
+    <style>
+        /* Dark Cyber Theme Core */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #0d0d11; 
+            color: #e2e8f0; 
+            margin: 0; 
+            padding: 20px; 
+        }
+        /* Navigation Hub Matrix */
+        nav { 
+            background: #1e293b; 
+            padding: 15px 20px; 
+            border-radius: 8px; 
+            border: 1px solid #334155;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        }
+        nav a { 
+            color: #38bdf8; 
+            text-decoration: none; 
+            margin-right: 25px; 
+            font-weight: 600; 
+            letter-spacing: 0.5px;
+            transition: color 0.2s ease;
+        }
+        nav a:hover { 
+            color: #f1f5f9; 
+        }
+        /* Main Workspace Container */
+        .content { 
+            margin-top: 30px; 
+            background: #1a1a24; 
+            padding: 30px; 
+            border-radius: 8px; 
+            border: 1px solid #2e2e3f;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+        h1 { 
+            color: #38bdf8; 
+            margin-top: 0;
+            font-size: 2.2rem;
+            border-bottom: 2px solid #2e2e3f;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34d399;
+            font-size: 1.5rem;
+            margin-top: 30px;
+        }
+        .status-badge {
+            display: inline-block;
+            background: #065f46;
+            color: #34d399;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        p {
+            line-height: 1.6;
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+        /* Download Button Action */
+        .btn-download {
+            display: inline-block;
+            background: #2563eb;
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: bold;
+            text-decoration: none;
+            margin: 15px 0;
+            transition: background 0.2s ease;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        .btn-download:hover {
+            background: #1d4ed8;
+        }
+        /* Installation Instructions Box */
+        .instructions-box {
+            background: #11111a;
+            border-left: 4px solid #38bdf8;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 0 8px 8px 0;
+        }
+        ol {
+            padding-left: 20px;
+            color: #cbd5e1;
+            line-height: 1.8;
+        }
+        code {
+            background: #2e2e3f;
+            color: #f43f5e;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Universal Deep-Link Navigation Menu -->
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="src/pages/firmware.html">Firmware Spec</a>
+        <a href="src/pages/about-us.html">About Us</a>
+    </nav>
+
+    <!-- Main Active Workspace -->
+    <div class="content">
+        <span class="status-badge">SYSTEMS: ONLINE</span>
+        <h1>DarkFox Co. Infrastructure Terminal</h1>
+        <p>Welcome to the central deployment node managed by <strong>DF-Exploiter</strong>.</p>
+        
+        <h2>Firmware Quick Download</h2>
+        <p>Grab the latest binary build of the custom bare-metal shooter operating system directly from the deployment link below:</p>
+        
+        <a href="https://github.com/SlabyLol/3DSFirm/releases/download/latest/y_firm_darkfox.firm" class="btn-download">
+            📥 Download y_firm_darkfox.firm
+        </a>
+
+        <h2>Installation Guide (How to Setup)</h2>
+        <div class="instructions-box">
+            <p>Follow these execution steps to boot the firmware module via your console's environment loader:</p>
+            <ol>
+                <li>Power off your console and insert the SD card into your PC / card reader.</li>
+                <li>Navigate to the <code>luma</code> folder on the root of your SD card.</li>
+                <li>Inside the luma folder, look for a subfolder named <code>payloads</code> (if it doesn't exist, create it).</li>
+                <li>Copy the downloaded <code>y_firm_darkfox.firm</code> file into that <code>/luma/payloads/</code> directory.</li>
+                <li>Safely eject the SD card and insert it back into your console.</li>
+                <li>Hold down the <strong>(Start)</strong> button on the console and press the <strong>Power</strong> button.</li>
+                <li>The Luma3DS chainloader menu will appear. Select <code>y_firm_darkfox</code> to launch your bare-metal game!</li>
+            </ol>
+        </div>
+    </div>
+
+</body>
+</html>
