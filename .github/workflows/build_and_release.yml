@@ -18,24 +18,17 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. Setup Python environment inside the container
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      # 3. Install firmtool inside the active environment
+      # 2. Install firmtool directly using the container's native Python
       - name: Install firmtool Dependency
         run: |
-          python -m pip install --upgrade pip
-          pip install git+https://github.com/TuxSH/firmtool.git
+          python3 -m pip install --break-system-packages git+https://github.com/TuxSH/firmtool.git
 
-      # 4. Execute the Makefile automation rules
+      # 3. Execute the Makefile automation rules
       - name: Compile and Pack Firmware
         run: |
           make
 
-      # 5. Export the successfully generated .firm binary asset
+      # 4. Export the successfully generated .firm binary asset
       - name: Upload Compiled Firmware Artifact
         uses: actions/upload-artifact@v4
         with:
