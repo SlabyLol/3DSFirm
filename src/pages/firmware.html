@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DarkFox Co. | Firmware Spec</title>
+    <style>
+        /* Dark Cyber Theme Core */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #0d0d11; 
+            color: #e2e8f0; 
+            margin: 0; 
+            padding: 20px; 
+        }
+        /* Navigation Hub Matrix */
+        nav { 
+            background: #1e293b; 
+            padding: 15px 20px; 
+            border-radius: 8px; 
+            border: 1px solid #334155;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        }
+        nav a { 
+            color: #38bdf8; 
+            text-decoration: none; 
+            margin-right: 25px; 
+            font-weight: 600; 
+            letter-spacing: 0.5px;
+            transition: color 0.2s ease;
+        }
+        nav a:hover { 
+            color: #f1f5f9; 
+        }
+        /* Main Workspace Container */
+        .content { 
+            margin-top: 30px; 
+            background: #1a1a24; 
+            padding: 30px; 
+            border-radius: 8px; 
+            border: 1px solid #2e2e3f;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+        h1 { 
+            color: #38bdf8; 
+            margin-top: 0;
+            font-size: 2.2rem;
+            border-bottom: 2px solid #2e2e3f;
+            padding-bottom: 10px;
+        }
+        h2 { 
+            color: #34d399; 
+            margin-top: 25px; 
+            font-size: 1.5rem;
+        }
+        ul { 
+            line-height: 1.8; 
+            color: #94a3b8; 
+            font-size: 1.05rem;
+            padding-left: 20px;
+        }
+        code { 
+            background: #2e2e3f; 
+            color: #f43f5e; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            font-family: monospace; 
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="../../index.html">Home</a>
+        <a href="firmware.html">Firmware Spec</a>
+        <a href="about-us.html">About Us</a>
+    </nav>
+
+    <div class="content">
+        <h1>y_firm_darkfox Architectural Matrix</h1>
+        <p>This document details the low-level bare-metal execution parameters for the 3DS dual-core environment, bypassing the standard operating system layers.</p>
+        
+        <h2>Processor Execution & Memory Map</h2>
+        <ul>
+            <li><strong>ARM9 Core (ARMv5TE):</strong> Supervisor core executing code directly at entry vector <code>0x08000000</code> (SysIRAM). Responsible for display initialization, D-Pad register parsing via <code>REG_PAD_HID</code>, and direct VRAM rendering.</li>
+            <li><strong>ARM11 Core (ARMv6K):</strong> Secondary application core parked at execution vector <code>0x1FF80000</code> (AXI IRAM) inside a low-power <code>wfi</code> (Wait For Interrupt) assembly loop.</li>
+            <li><strong>Graphics Subsystem:</strong> Linear 32-bit frame buffer memory mapped directly to the top screen VRAM address space at <code>0x18000000</code>.</li>
+        </ul>
+
+        <h2>FIRM Layout & Cryptographic Verification</h2>
+        <ul>
+            <li><strong>Sector Constraint:</strong> Mandates strict 512-byte (<code>0x200</code>) block padding across all compiled payloads to comply with hardware NAND/SD interface controllers.</li>
+            <li><strong>Integrity Tags:</strong> Standardized SHA256 checksums are calculated over individual blocks and hardcoded into the FIRM metadata layout.</li>
+            <li><strong>Crypto Bypass:</strong> Allocates a dedicated 256-byte (<code>0x100</code>) dummy RSA signature field initialized to null blocks to satisfy Luma3DS bootloader structures without triggering format corruption faults.</li>
+        </ul>
+    </div>
+
+</body>
+</html>
