@@ -10,28 +10,32 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Run all steps directly inside the official devkitARM container environment
+    container: devkitpro/devkitarm:latest
 
     steps:
-      # 1. Holt den Quellcode aus dem Repository
+      # 1. Pull the codebase into the container workspace
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. Richtet die korrekte devkitPro Toolchain ein (Installiert devkitARM automatisch)
-      - name: Setup devkitPro Environment
-        uses: devkitPro/setup-devkitpro@v1
+      # 2. Setup Python environment inside the container
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
 
-      # 3. Installiert firmtool global via pipx und fügt es dem PATH hinzu
+      # 3. Install firmtool inside the active environment
       - name: Install firmtool Dependency
         run: |
-          pipx install git+https://github.com/TuxSH/firmtool.git
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          python -m pip install --upgrade pip
+          pip install git+https://github.com/TuxSH/firmtool.git
 
-      # 4. Führt das automatisierte Makefile aus
+      # 4. Execute the Makefile automation rules
       - name: Compile and Pack Firmware
         run: |
           make
 
-      # 5. Lädt die fertige .firm Datei als GitHub-Artefakt hoch
+      # 5. Export the successfully generated .firm binary asset
       - name: Upload Compiled Firmware Artifact
         uses: actions/upload-artifact@v4
         with:
