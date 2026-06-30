@@ -21,7 +21,7 @@ void init_screens(void) {
     }
 }
 
-void __attribute__((noreturn)) main(void) {
+int main(void) {
     // 1. Hardware-Infrastruktur initialisieren
     init_screens();
 
@@ -30,7 +30,10 @@ void __attribute__((noreturn)) main(void) {
 
     // 3. Hauptschleife des ARM9 (System-Kontrolle & Krypto-Operationen)
     while (1) {
-        // Hier folgen später deine Custom-Patches für das 3DS OS (NAND/Sig-Checks)
-        __asm__("wfe"); // Stromsparmodus bis zum nächsten Interrupt
+        // Da ARMv5 kein 'wfe' unterstützt, nutzen wir hier ein leeres Statement.
+        // Der Compiler optimiert das dank der Schleifenbedingung nicht weg.
+        __asm__(""); 
     }
+
+    return 0; // Wird nie erreicht, beruhigt aber den Compiler
 }
