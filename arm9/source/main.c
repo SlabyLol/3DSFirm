@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stddef.h>
 
 #define REG_PDN_CLKEN0    (*(volatile uint32_t*)0x10141000)
 #define REG_PAD_HID       (*(volatile uint32_t*)0x10146000)
@@ -11,6 +12,15 @@
 // Tasten-Bitmasks (Inverted raw registers)
 #define BUTTON_LEFT       (1 << 5)
 #define BUTTON_RIGHT      (1 << 4)
+
+// Standard-compliant fallback memset to satisfy GCC internal compiler optimizations
+void* memset(void* dest, int val, size_t count) {
+    uint8_t* ptr = (uint8_t*)dest;
+    while (count--) {
+        *ptr++ = (uint8_t)val;
+    }
+    return dest;
+}
 
 // Custom 32-bit fast block memory clear to prevent CPU timing lockups
 void memset32(void* dest, uint32_t val, uint32_t words) {
